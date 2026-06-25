@@ -1,0 +1,88 @@
+@page "/"
+@using MudBlazor
+@using GameBoyRPG.BlazorUI.Services
+@inject ApiService Api
+@inject NavigationManager Nav
+
+<PageTitle>GameBoy RPG — Accueil</PageTitle>
+
+<MudGrid Justify="Justify.Center" Class="mt-8">
+    <MudItem xs="12" sm="8" md="5">
+        <MudPaper Class="pa-6" Style="background:#1A5C1A;border:2px solid #9BBC0F;border-radius:8px;">
+            <MudText Typo="Typo.h4" Align="Align.Center"
+                     Style="color:#9BBC0F;font-family:'Courier New',monospace;letter-spacing:3px;margin-bottom:24px;">
+                ▶ GAMEBOY RPG ◀
+            </MudText>
+
+            <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true"
+                     Style="color:#9BBC0F;">
+                <MudTabPanel Text="CONNEXION">
+                    <MudTextField @bind-Value="_loginUser" Label="Utilisateur"
+                                  Variant="Variant.Outlined" Class="mt-4"
+                                  Style="color:#9BBC0F;" />
+                    <MudTextField @bind-Value="_loginPass" Label="Mot de passe"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined" Class="mt-2" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               FullWidth="true" Class="mt-4" OnClick="Login">
+                        SE CONNECTER
+                    </MudButton>
+                </MudTabPanel>
+
+                <MudTabPanel Text="INSCRIPTION">
+                    <MudTextField @bind-Value="_regUser"  Label="Utilisateur"
+                                  Variant="Variant.Outlined" Class="mt-4" />
+                    <MudTextField @bind-Value="_regPass"  Label="Mot de passe"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined" Class="mt-2" />
+                    <MudTextField @bind-Value="_regHero"  Label="Nom du héros"
+                                  Variant="Variant.Outlined" Class="mt-2" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                               FullWidth="true" Class="mt-4" OnClick="Register">
+                        CRÉER PERSONNAGE
+                    </MudButton>
+                </MudTabPanel>
+            </MudTabs>
+
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <MudAlert Severity="@_severity" Class="mt-4">@_message</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    string _loginUser = "", _loginPass = "";
+    string _regUser = "", _regPass = "", _regHero = "";
+    string _message = "";
+    Severity _severity = Severity.Info;
+
+    async Task Login()
+    {
+        var res = await Api.PostAsync<Dictionary<string, object>>(
+            "api/players/login",
+            new { username = _loginUser, password = _loginPass });
+
+        if (res != null && res.ContainsKey("id"))
+        {
+            var id = res["id"]?.ToString();
+            Nav.NavigateTo($"/game/{id}");
+        }
+        else { _message = "Identifiants incorrects."; _severity = Severity.Error; }
+    }
+
+    async Task Register()
+    {
+        var res = await Api.PostAsync<Dictionary<string, object>>(
+            "api/players/register",
+            new { username = _regUser, password = _regPass, heroName = _regHero });
+
+        if (res != null)
+        {
+            _message = $"Bienvenue, {_regHero} ! Connecte-toi maintenant.";
+            _severity = Severity.Success;
+        }
+        else { _message = "Erreur — nom déjà pris ?"; _severity = Severity.Error; }
+    }
+}

@@ -1,0 +1,261 @@
+@page "/game/{PlayerId:int}"
+@using MudBlazor
+@using GameBoyRPG.BlazorUI.Services
+@inject ApiService Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Aventure</PageTitle>
+
+@if (_player == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        <!-- HERO CARD -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+                <MudText Typo="Typo.h5" Style="color:#9BBC0F;font-family:'Courier New',monospace;">
+                    ⚔️ @_player.HeroName
+                </MudText>
+                <MudText Style="color:#8BAC0F;">Niveau @_player.Level</MudText>
+                <MudText Style="color:#8BAC0F;">EXP : @_player.Experience / @(_player.Level * 100)</MudText>
+                <MudProgressLinear Value="@ExpPercent" Color="Color.Primary" Class="my-2" />
+
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudText Style="color:#9BBC0F;">❤️ HP</MudText>
+                        <MudProgressLinear Value="@HpPercent" Color="Color.Error" />
+                        <MudText Style="color:#8BAC0F;">@_player.CurrentHp / @_player.MaxHp</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Style="color:#9BBC0F;">💰 Or : @_player.Gold</MudText>
+                        <MudText Style="color:#9BBC0F;">⚔️ ATK : @_player.Attack</MudText>
+                        <MudText Style="color:#9BBC0F;">🛡️ DEF : @_player.Defense</MudText>
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-3" Style="border-color:#306230;" />
+                <MudText Typo="Typo.subtitle2" Style="color:#8BAC0F;">Position : (@_player.MapX, @_player.MapY)</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           OnClick="SaveGame" Class="mt-2" FullWidth="true">
+                    💾 Sauvegarder
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <!-- MAP -->
+        <MudItem xs="12" md="5">
+            <MudPaper Class="pa-4" Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+                <MudText Typo="Typo.h6" Style="color:#9BBC0F;font-family:'Courier New',monospace;">
+                    🗺️ CARTE
+                </MudText>
+                <div style="display:grid;grid-template-columns:repeat(16,1fr);gap:1px;margin-top:8px;">
+                    @for (int y = 0; y < 16; y++)
+                    {
+                        @for (int x = 0; x < 16; x++)
+                        {
+                            int cx = x, cy = y;
+                            bool isHero = _player.MapX == cx && _player.MapY == cy;
+                            string tile = GetTile(cx, cy);
+                            <div @onclick="() => MovePlayer(cx, cy)"
+                                 title="(@cx,@cy)"
+                                 style="width:18px;height:18px;font-size:10px;
+                                        text-align:center;line-height:18px;cursor:pointer;
+                                        background:@(isHero ? '#306230' : 'transparent');
+                                        border:@(isHero ? '1px solid #9BBC0F' : 'none');">
+                                @(isHero ? "🧑" : tile)
+                            </div>
+                        }
+                    }
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- MONSTERS -->
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+                <MudText Typo="Typo.h6" Style="color:#9BBC0F;font-family:'Courier New',monospace;">
+                    👾 COMBATTRE
+                </MudText>
+                @if (_monsters != null)
+                {
+                    @foreach (var m in _monsters)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   FullWidth="true" Class="mb-1"
+                                   Style="color:#9BBC0F;border-color:#306230;text-align:left;"
+                                   OnClick="() => Fight(m.Id)">
+                            @m.Sprite @m.Name  Niv.@m.Level
+                        </MudButton>
+                    }
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- BATTLE LOG -->
+        @if (!string.IsNullOrEmpty(_battleMessage))
+        {
+            <MudItem xs="12">
+                <MudAlert Severity="@(_lastBattle?.PlayerWon == true ? Severity.Success : Severity.Warning)"
+                          Style="background:#0F380F;border:1px solid #9BBC0F;color:#9BBC0F;font-family:'Courier New',monospace;">
+                    @_battleMessage
+                </MudAlert>
+            </MudItem>
+        }
+
+        <!-- INVENTORY -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+                <MudText Typo="Typo.h6" Style="color:#9BBC0F;font-family:'Courier New',monospace;">
+                    🎒 INVENTAIRE
+                </MudText>
+                @if (_inventory != null && _inventory.Any())
+                {
+                    <MudTable Items="_inventory" Dense="true" Hover="true"
+                              Style="background:transparent;color:#9BBC0F;">
+                        <HeaderContent>
+                            <MudTh Style="color:#8BAC0F;">Item</MudTh>
+                            <MudTh Style="color:#8BAC0F;">Qté</MudTh>
+                            <MudTh Style="color:#8BAC0F;"></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd Style="color:#9BBC0F;">@context.Icon @context.Name</MudTd>
+                            <MudTd Style="color:#9BBC0F;">@context.Quantity</MudTd>
+                            <MudTd>
+                                <MudButton Size="Size.Small" Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           OnClick="() => UseItem(context.ItemId)">
+                                    UTILISER
+                                </MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudText Style="color:#8BAC0F;">Inventaire vide.</MudText>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- SHOP -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+                <MudText Typo="Typo.h6" Style="color:#9BBC0F;font-family:'Courier New',monospace;">
+                    🏪 BOUTIQUE
+                </MudText>
+                @if (_shop != null)
+                {
+                    @foreach (var item in _shop)
+                    {
+                        <MudGrid AlignItems="AlignItems.Center" Class="mb-1">
+                            <MudItem xs="8">
+                                <MudText Style="color:#9BBC0F;font-size:0.85rem;">
+                                    @item.Icon @item.Name — @item.Price 💰
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="4">
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           OnClick="() => BuyItem(item.Id)">
+                                    ACHETER
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public int PlayerId { get; set; }
+
+    PlayerInfo? _player;
+    List<MonsterInfo>? _monsters;
+    List<InventoryItem>? _inventory;
+    List<ShopItem>? _shop;
+    BattleResult? _lastBattle;
+    string _battleMessage = "";
+
+    double ExpPercent => _player == null ? 0 : (double)_player.Experience / (_player.Level * 100) * 100;
+    double HpPercent  => _player == null ? 0 : (double)_player.CurrentHp  / _player.MaxHp * 100;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAll();
+    }
+
+    async Task LoadAll()
+    {
+        _player    = await Api.GetAsync<PlayerInfo>($"api/players/{PlayerId}");
+        _monsters  = await Api.GetAsync<List<MonsterInfo>>("api/monsters");
+        await LoadInventory();
+        _shop = await Api.GetAsync<List<ShopItem>>("api/shop");
+    }
+
+    async Task LoadInventory() =>
+        _inventory = await Api.GetAsync<List<InventoryItem>>($"api/players/{PlayerId}/inventory");
+
+    async Task Fight(int monsterId)
+    {
+        _lastBattle = await Api.PostAsync<BattleResult>(
+            $"api/battle/{PlayerId}", new { monsterId });
+        if (_lastBattle != null)
+        {
+            _battleMessage = _lastBattle.Message;
+            if (_lastBattle.LeveledUp)
+                Snackbar.Add($"🎉 Niveau {_lastBattle.NewLevel} !", Severity.Success);
+            await LoadAll();
+        }
+    }
+
+    async Task UseItem(int itemId)
+    {
+        var res = await Api.PostAsync<string>($"api/players/{PlayerId}/inventory/use", new { itemId });
+        Snackbar.Add(res ?? "Utilisé.", Severity.Info);
+        await LoadAll();
+    }
+
+    async Task BuyItem(int itemId)
+    {
+        var res = await Api.PostAsync<string>($"api/shop/{PlayerId}/buy/{itemId}", new { });
+        Snackbar.Add(res ?? "Acheté.", Severity.Success);
+        await LoadAll();
+    }
+
+    async Task MovePlayer(int x, int y)
+    {
+        await Api.PostAsync<string>($"api/players/{PlayerId}/move", new { x, y });
+        _player = await Api.GetAsync<PlayerInfo>($"api/players/{PlayerId}");
+    }
+
+    async Task SaveGame()
+    {
+        await Api.PostAsync<string>($"api/players/{PlayerId}/save", new { slotNumber = 1 });
+        Snackbar.Add("💾 Jeu sauvegardé !", Severity.Success);
+    }
+
+    string GetTile(int x, int y)
+    {
+        // Simple deterministic map generation
+        int hash = (x * 31 + y * 17) % 10;
+        return hash switch
+        {
+            0 or 1 => "🌲",
+            2      => "🏔️",
+            3      => "💧",
+            4      => "🏠",
+            _      => "·"
+        };
+    }
+
+    // Local DTOs
+    record InventoryItem(int Id, int ItemId, int Quantity, string Name,
+        string Description, string Type, int Effect, string Icon, int Price);
+    record ShopItem(int Id, string Name, string Description,
+        string Type, int Effect, int Price, string Icon);
+}

@@ -1,0 +1,20 @@
+@inherits LayoutComponentBase
+@using MudBlazor
+
+<MudLayout>
+    <MudAppBar Elevation="2" Color="Color.Transparent">
+        <MudIcon Icon="@Icons.Material.Filled.VideogameAsset" Class="mr-2" Color="Color.Primary"/>
+        <MudText Typo="Typo.h6" Style="color:#9BBC0F;font-family:'Courier New',monospace;letter-spacing:2px;">
+            GAMEBOY RPG
+        </MudText>
+        <MudSpacer />
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Style="color:#9BBC0F;">Accueil</MudNavLink>
+        <MudNavLink Href="/leaderboard"  Style="color:#9BBC0F;">Classement</MudNavLink>
+        <MudNavLink Href="/profile"      Style="color:#9BBC0F;">Profil</MudNavLink>
+    </MudAppBar>
+    <MudMainContent Style="background:#0F380F;min-height:100vh;">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GameBoy RPG</title>
+    <base href="/" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <style>
+        body { background-color: #0F380F; margin: 0; font-family: 'Courier New', monospace; }
+        ::-webkit-scrollbar { width: 6px; background: #0F380F; }
+        ::-webkit-scrollbar-thumb { background: #306230; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <svg xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;margin-top:20vh;" width="50" height="50" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" fill="none" r="70" stroke="#9BBC0F" stroke-width="10" stroke-dasharray="226 1000" stroke-linecap="round">
+                <animateTransform attributeName="transform" calcMode="spline" dur="1.5" keySplines="0.36,.6,.31,1" keyTimes="0;1" repeatCount="indefinite" type="rotate" values="0 100 100;360 100 100"/>
+            </circle>
+        </svg>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+</body>
+</html>

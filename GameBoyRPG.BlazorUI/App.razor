@@ -1,0 +1,33 @@
+@using MudBlazor
+
+<MudThemeProvider Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Introuvable</PageTitle>
+        <p>Page introuvable.</p>
+    </NotFound>
+</Router>
+
+@code {
+    private MudTheme _theme = new MudTheme
+    {
+        Palette = new PaletteLight
+        {
+            Primary        = "#8BAC0F",
+            Secondary      = "#306230",
+            Background     = "#0F380F",
+            Surface        = "#1A5C1A",
+            DrawerBackground = "#0F380F",
+            AppbarBackground = "#0F380F",
+            TextPrimary    = "#9BBC0F",
+            TextSecondary  = "#8BAC0F",
+        }
+    };
+}

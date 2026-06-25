@@ -1,0 +1,49 @@
+@page "/leaderboard"
+@using MudBlazor
+@using GameBoyRPG.BlazorUI.Services
+@inject ApiService Api
+
+<PageTitle>Classement</PageTitle>
+
+<MudText Typo="Typo.h4" Style="color:#9BBC0F;font-family:'Courier New',monospace;" Class="mb-4">
+    🏆 CLASSEMENT MONDIAL
+</MudText>
+
+@if (_entries == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudTable Items="_entries" Dense="true" Hover="true" Elevation="4"
+              Style="background:#1A5C1A;border:2px solid #9BBC0F;">
+        <HeaderContent>
+            <MudTh Style="color:#8BAC0F;">#</MudTh>
+            <MudTh Style="color:#8BAC0F;">Héros</MudTh>
+            <MudTh Style="color:#8BAC0F;">Joueur</MudTh>
+            <MudTh Style="color:#8BAC0F;">Niv.</MudTh>
+            <MudTh Style="color:#8BAC0F;">EXP</MudTh>
+            <MudTh Style="color:#8BAC0F;">Victoires</MudTh>
+            <MudTh Style="color:#8BAC0F;">Combats</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd Style="color:#9BBC0F;">@((_entries.IndexOf(context) + 1))</MudTd>
+            <MudTd Style="color:#9BBC0F;">
+                @((_entries.IndexOf(context)) switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => "" })
+                @context.HeroName
+            </MudTd>
+            <MudTd Style="color:#8BAC0F;">@context.Username</MudTd>
+            <MudTd Style="color:#9BBC0F;">@context.Level</MudTd>
+            <MudTd Style="color:#8BAC0F;">@context.Experience</MudTd>
+            <MudTd Style="color:#9BBC0F;">@context.TotalWins</MudTd>
+            <MudTd Style="color:#8BAC0F;">@context.TotalBattles</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    List<LeaderboardEntry>? _entries;
+
+    protected override async Task OnInitializedAsync() =>
+        _entries = await Api.GetAsync<List<LeaderboardEntry>>("api/leaderboard");
+}
